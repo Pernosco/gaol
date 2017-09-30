@@ -14,7 +14,7 @@ use std::thread;
 #[cfg(target_os="linux")]
 use gaol::platform::linux::seccomp::ALLOWED_SYSCALLS;
 
-const MAX_SYSCALL: u32 = 400;
+const MAX_SYSCALL: i64 = 400;
 
 fn profile() -> Profile {
     Profile::new(Vec::new()).unwrap()
@@ -34,7 +34,7 @@ pub fn main() {
         return test_syscall(arg.parse().unwrap())
     }
 
-    let num_cpus = num_cpus::get() as u32;
+    let num_cpus = num_cpus::get() as i64;
     let handles = (0..num_cpus).into_iter().map(|index| {
         thread::spawn(move || {
             for syscall in 0..MAX_SYSCALL {

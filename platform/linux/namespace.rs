@@ -152,6 +152,9 @@ impl ChrootJail {
                                                             .unwrap()
                                                             .as_bytes()).unwrap();
         let bind = CString::new("bind").unwrap();
+        // Readonly directories and files should be mounted readonly as an
+        // extra layer of security; currently we deny opening writeable files using
+        // the seccomp filter, but that could change or have a bug.
         let result = unsafe {
             mount(source_path.as_ptr(),
                   destination_path.as_ptr(),

@@ -22,7 +22,7 @@ use platform::linux::namespace::{CLONE_THREAD, CLONE_VM, CLONE_VFORK};
 use profile::{Operation, Profile};
 
 use libc::{self, AF_INET, AF_INET6, AF_UNIX, AF_NETLINK};
-use libc::{c_char, c_int, c_ulong, c_ushort, c_void};
+use libc::{c_char, c_int, c_long, c_ulong, c_ushort, c_void};
 use libc::{O_NONBLOCK, O_RDONLY, O_NOCTTY, O_CLOEXEC, FIONREAD, FIOCLEX};
 use libc::{MADV_NORMAL, MADV_RANDOM, MADV_SEQUENTIAL, MADV_WILLNEED, MADV_DONTNEED};
 use libc::SIGCHLD;
@@ -70,54 +70,6 @@ const ARG_1_OFFSET: u32 = 24;
 const ARG_2_OFFSET: u32 = 32;
 
 const NETLINK_ROUTE: c_int = 0;
-
-const NR_read: u32 = 0;
-const NR_write: u32 = 1;
-const NR_open: u32 = 2;
-const NR_close: u32 = 3;
-const NR_stat: u32 = 4;
-const NR_fstat: u32 = 5;
-const NR_poll: u32 = 7;
-const NR_lseek: u32 = 8;
-const NR_mmap: u32 = 9;
-const NR_mprotect: u32 = 10;
-const NR_munmap: u32 = 11;
-const NR_brk: u32 = 12;
-const NR_rt_sigaction: u32 = 13;
-const NR_rt_sigprocmask: u32 = 14;
-const NR_rt_sigreturn: u32 = 15;
-const NR_ioctl: u32 = 16;
-const NR_access: u32 = 21;
-const NR_madvise: u32 = 28;
-const NR_socket: u32 = 41;
-const NR_connect: u32 = 42;
-const NR_sendto: u32 = 44;
-const NR_recvfrom: u32 = 45;
-const NR_recvmsg: u32 = 47;
-const NR_bind: u32 = 49;
-const NR_getsockname: u32 = 51;
-const NR_clone: u32 = 56;
-const NR_fork: u32 = 57;
-const NR_vfork: u32 = 58;
-const NR_execve: u32 = 59;
-const NR_exit: u32 = 60;
-const NR_readlink: u32 = 89;
-const NR_gettimeofday: u32 = 96;
-const NR_getrlimit: u32 = 97;
-const NR_getuid: u32 = 102;
-const NR_sigaltstack: u32 = 131;
-const NR_arch_prctl: u32 = 158;
-const NR_setrlimit: u32 = 160;
-const NR_time: u32 = 201;
-const NR_futex: u32 = 202;
-const NR_sched_getaffinity: u32 = 204;
-const NR_set_tid_address: u32 = 218;
-const NR_exit_group: u32 = 231;
-const NR_set_robust_list: u32 = 273;
-const NR_prlimit64: u32 = 302;
-const NR_sendmmsg: u32 = 307;
-const NR_getrandom: u32 = 318;
-const NR_execveat: u32 = 322;
 
 const ARCH_SET_GS: u32 = 0x1001;
 const ARCH_SET_FS: u32 = 0x1002;
@@ -167,57 +119,57 @@ static FILTER_EPILOGUE: [sock_filter; 1] = [
 ];
 
 /// Syscalls that are always allowed.
-pub static ALLOWED_SYSCALLS: [u32; 29] = [
-    NR_brk,
-    NR_close,
-    NR_exit,
-    NR_exit_group,
-    NR_futex,
-    NR_getrandom,
-    NR_getrlimit,
-    NR_gettimeofday,
-    NR_getuid,
-    NR_mmap,
-    NR_mprotect,
-    NR_munmap,
-    NR_poll,
-    NR_prlimit64,
-    NR_read,
-    NR_recvfrom,
-    NR_recvmsg,
-    NR_rt_sigaction,
-    NR_rt_sigprocmask,
-    NR_rt_sigreturn,
-    NR_sched_getaffinity,
-    NR_sendmmsg,
-    NR_sendto,
-    NR_set_robust_list,
-    NR_set_tid_address,
-    NR_setrlimit,
-    NR_sigaltstack,
-    NR_time,
-    NR_write,
+pub static ALLOWED_SYSCALLS: [c_long; 29] = [
+    libc::SYS_brk,
+    libc::SYS_close,
+    libc::SYS_exit,
+    libc::SYS_exit_group,
+    libc::SYS_futex,
+    libc::SYS_getrandom,
+    libc::SYS_getrlimit,
+    libc::SYS_gettimeofday,
+    libc::SYS_getuid,
+    libc::SYS_mmap,
+    libc::SYS_mprotect,
+    libc::SYS_munmap,
+    libc::SYS_poll,
+    libc::SYS_prlimit64,
+    libc::SYS_read,
+    libc::SYS_recvfrom,
+    libc::SYS_recvmsg,
+    libc::SYS_rt_sigaction,
+    libc::SYS_rt_sigprocmask,
+    libc::SYS_rt_sigreturn,
+    libc::SYS_sched_getaffinity,
+    libc::SYS_sendmmsg,
+    libc::SYS_sendto,
+    libc::SYS_set_robust_list,
+    libc::SYS_set_tid_address,
+    libc::SYS_setrlimit,
+    libc::SYS_sigaltstack,
+    libc::SYS_time,
+    libc::SYS_write,
 ];
 
-static ALLOWED_SYSCALLS_FOR_FILE_READ: [u32; 5] = [
-    NR_access,
-    NR_fstat,
-    NR_lseek,
-    NR_readlink,
-    NR_stat,
+static ALLOWED_SYSCALLS_FOR_FILE_READ: [c_long; 5] = [
+    libc::SYS_access,
+    libc::SYS_fstat,
+    libc::SYS_lseek,
+    libc::SYS_readlink,
+    libc::SYS_stat,
 ];
 
-static ALLOWED_SYSCALLS_FOR_NETWORK_OUTBOUND: [u32; 3] = [
-    NR_bind,
-    NR_connect,
-    NR_getsockname,
+static ALLOWED_SYSCALLS_FOR_NETWORK_OUTBOUND: [c_long; 3] = [
+    libc::SYS_bind,
+    libc::SYS_connect,
+    libc::SYS_getsockname,
 ];
 
-static ALLOWED_SYSCALLS_FOR_PROCESS_CREATION: [u32; 4] = [
-    NR_fork,
-    NR_vfork,
-    NR_execve,
-    NR_execveat,
+static ALLOWED_SYSCALLS_FOR_PROCESS_CREATION: [c_long; 4] = [
+    libc::SYS_fork,
+    libc::SYS_vfork,
+    libc::SYS_execve,
+    libc::SYS_execveat,
 ];
 
 const ALLOW_SYSCALL: sock_filter = sock_filter {
@@ -290,7 +242,7 @@ impl Filter {
         filter.allow_syscalls(&ALLOWED_SYSCALLS);
 
         // glibc uses these during startup
-        filter.if_syscall_is(NR_arch_prctl, |filter| {
+        filter.if_syscall_is(libc::SYS_arch_prctl, |filter| {
             filter.if_arg0_is(ARCH_SET_GS as u32, |filter| filter.allow_this_syscall());
             filter.if_arg0_is(ARCH_SET_FS as u32, |filter| filter.allow_this_syscall());
             filter.if_arg0_is(ARCH_GET_FS as u32, |filter| filter.allow_this_syscall());
@@ -306,13 +258,13 @@ impl Filter {
             filter.allow_syscalls(&ALLOWED_SYSCALLS_FOR_FILE_READ);
 
             // Only allow file reading.
-            filter.if_syscall_is(NR_open, |filter| {
+            filter.if_syscall_is(libc::SYS_open, |filter| {
                 filter.if_arg1_hasnt_set(!(O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NONBLOCK) as u32,
                                          |filter| filter.allow_this_syscall())
             });
 
             // Only allow the `FIONREAD` or `FIOCLEX` `ioctl`s to be performed.
-            filter.if_syscall_is(NR_ioctl, |filter| {
+            filter.if_syscall_is(libc::SYS_ioctl, |filter| {
                 filter.if_arg1_is(FIONREAD as u32, |filter| filter.allow_this_syscall());
                 filter.if_arg1_is(FIOCLEX as u32, |filter| filter.allow_this_syscall())
             })
@@ -327,7 +279,7 @@ impl Filter {
             filter.allow_syscalls(&ALLOWED_SYSCALLS_FOR_NETWORK_OUTBOUND);
 
             // Only allow Unix, IPv4, IPv6, and netlink route sockets to be created.
-            filter.if_syscall_is(NR_socket, |filter| {
+            filter.if_syscall_is(libc::SYS_socket, |filter| {
                 filter.if_arg0_is(AF_UNIX as u32, |filter| filter.allow_this_syscall());
                 filter.if_arg0_is(AF_INET as u32, |filter| filter.allow_this_syscall());
                 filter.if_arg0_is(AF_INET6 as u32, |filter| filter.allow_this_syscall());
@@ -349,7 +301,7 @@ impl Filter {
 
         // Only allow normal threads to be created, or vfork/fork if they
         // are enabled.
-        filter.if_syscall_is(NR_clone, |filter| {
+        filter.if_syscall_is(libc::SYS_clone, |filter| {
             filter.if_arg0_is((CLONE_VM |
                                CLONE_FS |
                                CLONE_FILES |
@@ -371,7 +323,7 @@ impl Filter {
         });
 
         // Only allow the POSIX values for `madvise`.
-        filter.if_syscall_is(NR_madvise, |filter| {
+        filter.if_syscall_is(libc::SYS_madvise, |filter| {
             for mode in [
                 MADV_NORMAL,
                 MADV_RANDOM,
@@ -436,15 +388,15 @@ impl Filter {
         self.program.push(ALLOW_SYSCALL)
     }
 
-    fn allow_syscalls(&mut self, syscalls: &[u32]) {
+    fn allow_syscalls(&mut self, syscalls: &[c_long]) {
         for &syscall in syscalls.iter() {
             self.if_syscall_is(syscall, |filter| filter.allow_this_syscall())
         }
     }
 
-    fn if_syscall_is<F>(&mut self, number: u32, then: F) where F: FnMut(&mut Filter) {
+    fn if_syscall_is<F>(&mut self, number: c_long, then: F) where F: FnMut(&mut Filter) {
         self.program.push(EXAMINE_SYSCALL);
-        self.if_k_is(number, then)
+        self.if_k_is(number as u32, then)
     }
 
     fn if_arg0_is<F>(&mut self, value: u32, then: F) where F: FnMut(&mut Filter) {
