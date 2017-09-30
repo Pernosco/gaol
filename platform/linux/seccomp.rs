@@ -119,7 +119,7 @@ static FILTER_EPILOGUE: [sock_filter; 1] = [
 ];
 
 /// Syscalls that are always allowed.
-pub static ALLOWED_SYSCALLS: [c_long; 29] = [
+pub static ALLOWED_SYSCALLS: [c_long; 30] = [
     libc::SYS_brk,
     libc::SYS_close,
     libc::SYS_exit,
@@ -127,6 +127,7 @@ pub static ALLOWED_SYSCALLS: [c_long; 29] = [
     libc::SYS_futex,
     libc::SYS_getrandom,
     libc::SYS_getrlimit,
+    libc::SYS_getrusage,
     libc::SYS_gettimeofday,
     libc::SYS_getuid,
     libc::SYS_mmap,
