@@ -23,7 +23,7 @@ use profile::{Operation, Profile};
 
 use libc::{self, AF_INET, AF_INET6, AF_UNIX, AF_NETLINK};
 use libc::{c_char, c_int, c_long, c_ulong, c_ushort, c_void};
-use libc::{O_NONBLOCK, O_RDONLY, O_NOCTTY, O_CLOEXEC, FIONREAD, FIOCLEX};
+use libc::{O_NONBLOCK, O_DIRECTORY, O_RDONLY, O_NOCTTY, O_CLOEXEC, FIONREAD, FIOCLEX};
 use libc::{MADV_NORMAL, MADV_RANDOM, MADV_SEQUENTIAL, MADV_WILLNEED, MADV_DONTNEED};
 use libc::SIGCHLD;
 use std::ffi::CString;
@@ -152,9 +152,11 @@ pub static ALLOWED_SYSCALLS: [c_long; 30] = [
     libc::SYS_write,
 ];
 
-static ALLOWED_SYSCALLS_FOR_FILE_READ: [c_long; 7] = [
+static ALLOWED_SYSCALLS_FOR_FILE_READ: [c_long; 9] = [
     libc::SYS_access,
     libc::SYS_fstat,
+    libc::SYS_getdents,
+    libc::SYS_getdents64,
     libc::SYS_lseek,
     libc::SYS_lstat,
     libc::SYS_readlink,
@@ -262,7 +264,7 @@ impl Filter {
 
             // Only allow file reading.
             filter.if_syscall_is(libc::SYS_open, |filter| {
-                filter.if_arg1_hasnt_set(!(O_RDONLY | O_CLOEXEC | O_NOCTTY | O_NONBLOCK) as u32,
+                filter.if_arg1_hasnt_set(!(O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOCTTY | O_NONBLOCK) as u32,
                                          |filter| filter.allow_this_syscall())
             });
 
