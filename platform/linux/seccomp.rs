@@ -119,7 +119,7 @@ static FILTER_EPILOGUE: [sock_filter; 1] = [
 ];
 
 /// Syscalls that are always allowed.
-pub static ALLOWED_SYSCALLS: [c_long; 35] = [
+pub static ALLOWED_SYSCALLS: [c_long; 37] = [
     libc::SYS_brk,
     libc::SYS_close,
     libc::SYS_dup,
@@ -141,6 +141,7 @@ pub static ALLOWED_SYSCALLS: [c_long; 35] = [
     libc::SYS_poll,
     libc::SYS_prlimit64,
     libc::SYS_read,
+    libc::SYS_readv,
     libc::SYS_recvfrom,
     libc::SYS_recvmsg,
     libc::SYS_rt_sigaction,
@@ -155,9 +156,10 @@ pub static ALLOWED_SYSCALLS: [c_long; 35] = [
     libc::SYS_sigaltstack,
     libc::SYS_time,
     libc::SYS_write,
+    libc::SYS_writev,
 ];
 
-static ALLOWED_SYSCALLS_FOR_FILE_READ: [c_long; 10] = [
+static ALLOWED_SYSCALLS_FOR_FILE_READ: [c_long; 12] = [
     libc::SYS_access,
     libc::SYS_fstat,
     libc::SYS_getcwd,
@@ -165,6 +167,8 @@ static ALLOWED_SYSCALLS_FOR_FILE_READ: [c_long; 10] = [
     libc::SYS_getdents64,
     libc::SYS_lseek,
     libc::SYS_lstat,
+    libc::SYS_pread64,
+    libc::SYS_preadv,
     libc::SYS_readlink,
     libc::SYS_stat,
     libc::SYS_statfs,
