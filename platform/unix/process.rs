@@ -98,6 +98,7 @@ impl Process {
     }
 }
 
+#[derive(Clone, Debug)]
 pub enum ExitStatus {
     Code(i32),
     Signal(i32),
