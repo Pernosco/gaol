@@ -73,6 +73,8 @@ use std::path::PathBuf;
 ///    * Opening and closing file descriptors and sockets (but not necessarily connecting them
 ///      to anything).
 ///
+///    * Creating anonymous pipes.
+///
 ///    * Determining the user ID.
 ///
 ///    * Querying and altering thread scheduling options such as CPU affinity.

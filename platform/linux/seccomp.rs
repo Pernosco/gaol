@@ -119,7 +119,7 @@ static FILTER_EPILOGUE: [sock_filter; 1] = [
 ];
 
 /// Syscalls that are always allowed.
-pub static ALLOWED_SYSCALLS: [c_long; 30] = [
+pub static ALLOWED_SYSCALLS: [c_long; 32] = [
     libc::SYS_brk,
     libc::SYS_close,
     libc::SYS_exit,
@@ -133,6 +133,8 @@ pub static ALLOWED_SYSCALLS: [c_long; 30] = [
     libc::SYS_mmap,
     libc::SYS_mprotect,
     libc::SYS_munmap,
+    libc::SYS_pipe,
+    libc::SYS_pipe2,
     libc::SYS_poll,
     libc::SYS_prlimit64,
     libc::SYS_read,
@@ -269,10 +271,10 @@ impl Filter {
                                          |filter| filter.allow_this_syscall())
             });
 
-            // Only allow the `FIONREAD` or `FIOCLEX` `ioctl`s to be performed.
+            // Only allow limited `ioctl`s to be performed.
             filter.if_syscall_is(libc::SYS_ioctl, |filter| {
                 filter.if_arg1_is(FIONREAD as u32, |filter| filter.allow_this_syscall());
-                filter.if_arg1_is(FIOCLEX as u32, |filter| filter.allow_this_syscall())
+                filter.if_arg1_is(FIOCLEX as u32, |filter| filter.allow_this_syscall());
             })
         }
 
