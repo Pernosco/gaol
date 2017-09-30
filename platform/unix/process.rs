@@ -12,7 +12,7 @@
 
 use sandbox::Command;
 
-use libc::{c_char, c_int, pid_t};
+use libc::{c_char, c_int, pid_t, WNOHANG};
 use std::ffi::CString;
 use std::io;
 use std::ptr;
@@ -67,10 +67,18 @@ pub struct Process {
 
 impl Process {
     pub fn wait(&self) -> io::Result<ExitStatus> {
+        self.wait_internal(0).map(|v| v.unwrap())
+    }
+
+    pub fn try_wait(&self) -> io::Result<Option<ExitStatus>> {
+        self.wait_internal(WNOHANG)
+    }
+
+    fn wait_internal(&self, options: c_int) -> io::Result<Option<ExitStatus>> {
         let mut stat = 0;
         loop {
             let pid = unsafe {
-                waitpid(self.pid, &mut stat, 0)
+                waitpid(self.pid, &mut stat, options)
             };
             if pid < 0 {
                 return Err(io::Error::last_os_error())
@@ -78,12 +86,14 @@ impl Process {
             if pid == self.pid {
                 break
             }
+            assert!((options & WNOHANG) != 0);
+            return Ok(None);
         }
 
         if WIFEXITED(stat) {
-            Ok(ExitStatus::Code(WEXITSTATUS(stat) as i32))
+            Ok(Some(ExitStatus::Code(WEXITSTATUS(stat) as i32)))
         } else {
-            Ok(ExitStatus::Signal(WTERMSIG(stat) as i32))
+            Ok(Some(ExitStatus::Signal(WTERMSIG(stat) as i32)))
         }
     }
 }
