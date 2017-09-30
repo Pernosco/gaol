@@ -151,12 +151,14 @@ pub static ALLOWED_SYSCALLS: [c_long; 29] = [
     libc::SYS_write,
 ];
 
-static ALLOWED_SYSCALLS_FOR_FILE_READ: [c_long; 5] = [
+static ALLOWED_SYSCALLS_FOR_FILE_READ: [c_long; 7] = [
     libc::SYS_access,
     libc::SYS_fstat,
     libc::SYS_lseek,
+    libc::SYS_lstat,
     libc::SYS_readlink,
     libc::SYS_stat,
+    libc::SYS_statfs,
 ];
 
 static ALLOWED_SYSCALLS_FOR_NETWORK_OUTBOUND: [c_long; 3] = [
