@@ -152,9 +152,10 @@ pub static ALLOWED_SYSCALLS: [c_long; 30] = [
     libc::SYS_write,
 ];
 
-static ALLOWED_SYSCALLS_FOR_FILE_READ: [c_long; 9] = [
+static ALLOWED_SYSCALLS_FOR_FILE_READ: [c_long; 10] = [
     libc::SYS_access,
     libc::SYS_fstat,
+    libc::SYS_getcwd,
     libc::SYS_getdents,
     libc::SYS_getdents64,
     libc::SYS_lseek,
