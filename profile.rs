@@ -60,6 +60,8 @@ use std::path::PathBuf;
 ///
 ///    * Spawning new threads.
 ///
+///    * Get the current pid and thread id
+///
 ///    * Responding to signals (e.g. `signal`, `sigaltstack`).
 ///
 ///    * Read, write, and memory map of already-opened file descriptors or handles.
