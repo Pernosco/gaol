@@ -354,6 +354,20 @@ impl Filter {
                 filter.if_arg0_is(AF_NETLINK as u32, |filter| {
                     filter.if_arg2_is(NETLINK_ROUTE as u32, |filter| filter.allow_this_syscall())
                 })
+            });
+            // Only allow Unix, IPv4, IPv6, and netlink route sockets to be created.
+            filter.if_syscall_is(libc::SYS_socketpair, |filter| {
+                filter.if_arg0_is(AF_UNIX as u32, |filter| filter.allow_this_syscall());
+                filter.if_arg0_is(AF_INET as u32, |filter| filter.allow_this_syscall());
+                filter.if_arg0_is(AF_INET6 as u32, |filter| filter.allow_this_syscall());
+                filter.if_arg0_is(AF_NETLINK as u32, |filter| {
+                    filter.if_arg2_is(NETLINK_ROUTE as u32, |filter| filter.allow_this_syscall())
+                })
+            });
+        } else {
+            // Allow AF_UNIX socketpairs
+            filter.if_syscall_is(libc::SYS_socketpair, |filter| {
+                filter.if_arg0_is(AF_UNIX as u32, |filter| filter.allow_this_syscall());
             })
         }
 
