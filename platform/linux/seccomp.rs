@@ -23,7 +23,7 @@ use profile::{Operation, Profile};
 
 use libc::{self, AF_INET, AF_INET6, AF_UNIX, AF_NETLINK};
 use libc::{c_char, c_int, c_long, c_ulong, c_ushort, c_void};
-use libc::{O_NONBLOCK, O_DIRECTORY, O_RDONLY, O_NOCTTY, O_CLOEXEC};
+use libc::{O_NONBLOCK, O_DIRECTORY, O_RDONLY, O_NOCTTY, O_CLOEXEC, O_NOFOLLOW};
 use libc::{TCGETS, TIOCGWINSZ, FIONREAD, FIOCLEX};
 use libc::{F_DUPFD, F_DUPFD_CLOEXEC, F_GETFD, F_SETFD, F_GETFL, F_SETFL};
 use libc::ENOTTY;
@@ -306,7 +306,7 @@ impl Filter {
 
             // Only allow file reading.
             filter.if_syscall_is(libc::SYS_open, |filter| {
-                filter.if_arg1_hasnt_set(!(O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOCTTY | O_NONBLOCK) as u32,
+                filter.if_arg1_hasnt_set(!(O_RDONLY | O_DIRECTORY | O_CLOEXEC | O_NOCTTY | O_NONBLOCK | O_NOFOLLOW) as u32,
                                          |filter| filter.allow_this_syscall())
             });
 
