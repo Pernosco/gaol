@@ -200,6 +200,10 @@ static ALLOWED_SYSCALLS_FOR_PROCESS_CREATION: [c_long; 5] = [
     libc::SYS_wait4,
 ];
 
+static ALLOWED_SYSCALLS_FOR_SYSINFO: [c_long; 1] = [
+    libc::SYS_sysinfo,
+];
+
 const ALLOW_SYSCALL: sock_filter = sock_filter {
     code: RET + K,
     k: SECCOMP_RET_ALLOW,
@@ -342,6 +346,15 @@ impl Filter {
                     filter.if_arg2_is(NETLINK_ROUTE as u32, |filter| filter.allow_this_syscall())
                 })
             })
+        }
+
+        if profile.allowed_operations().iter().any(|operation| {
+            match *operation {
+                Operation::SystemInfoRead => true,
+                _ => false,
+            }
+        }) {
+            filter.allow_syscalls(&ALLOWED_SYSCALLS_FOR_SYSINFO);
         }
 
         let allow_process_creation = profile.allowed_operations().iter().any(|operation| {

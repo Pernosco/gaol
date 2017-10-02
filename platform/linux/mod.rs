@@ -28,7 +28,8 @@ impl OperationSupport for profile::Operation {
         match *self {
             profile::Operation::FileReadAll(_) |
             profile::Operation::NetworkOutbound(AddressPattern::All) |
-            profile::Operation::CreateNewProcesses => {
+            profile::Operation::CreateNewProcesses |
+            profile::Operation::SystemInfoRead => {
                 OperationSupportLevel::CanBeAllowed
             }
             profile::Operation::FileReadMetadata(_) |
@@ -36,7 +37,6 @@ impl OperationSupport for profile::Operation {
             profile::Operation::NetworkOutbound(AddressPattern::LocalSocket(_)) => {
                 OperationSupportLevel::CannotBeAllowedPrecisely
             }
-            profile::Operation::SystemInfoRead |
             profile::Operation::PlatformSpecific(_) => OperationSupportLevel::NeverAllowed,
         }
     }
