@@ -62,6 +62,8 @@ use std::path::PathBuf;
 ///
 ///    * Get the current pid and thread id
 ///
+///    * Get the current uid/euid/gid/egid
+///
 ///    * Responding to signals (e.g. `signal`, `sigaltstack`).
 ///
 ///    * Read, write, and memory map of already-opened file descriptors or handles.
