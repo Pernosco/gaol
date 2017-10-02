@@ -25,7 +25,7 @@ use libc::{self, AF_INET, AF_INET6, AF_UNIX, AF_NETLINK};
 use libc::{c_char, c_int, c_long, c_ulong, c_ushort, c_void};
 use libc::{O_NONBLOCK, O_DIRECTORY, O_RDONLY, O_NOCTTY, O_CLOEXEC};
 use libc::{TCGETS, TIOCGWINSZ, FIONREAD, FIOCLEX};
-use libc::{F_DUPFD, F_DUPFD_CLOEXEC, F_GETFD, F_SETFD, F_GETFL};
+use libc::{F_DUPFD, F_DUPFD_CLOEXEC, F_GETFD, F_SETFD, F_GETFL, F_SETFL};
 use libc::ENOTTY;
 use libc::{MADV_NORMAL, MADV_RANDOM, MADV_SEQUENTIAL, MADV_WILLNEED, MADV_DONTNEED};
 use libc::SIGCHLD;
@@ -324,6 +324,9 @@ impl Filter {
             filter.if_arg1_is(F_GETFD as u32, |filter| filter.allow_this_syscall());
             filter.if_arg1_is(F_SETFD as u32, |filter| filter.allow_this_syscall());
             filter.if_arg1_is(F_GETFL as u32, |filter| filter.allow_this_syscall());
+            filter.if_arg1_is(F_SETFL as u32, |filter|
+                filter.if_arg2_hasnt_set(!(O_NONBLOCK | O_CLOEXEC) as u32,
+                                         |filter| filter.allow_this_syscall()));
         });
 
         // Enable some tty ioctls, but only let them return ENOTTY.
@@ -493,6 +496,11 @@ impl Filter {
     fn if_arg2_is<F>(&mut self, value: u32, then: F) where F: FnMut(&mut Filter) {
         self.program.push(EXAMINE_ARG_2);
         self.if_k_is(value, then)
+    }
+
+    fn if_arg2_hasnt_set<F>(&mut self, value: u32, then: F) where F: FnMut(&mut Filter) {
+        self.program.push(EXAMINE_ARG_2);
+        self.if_k_hasnt_set(value, then)
     }
 
     fn if_k_is<F>(&mut self, value: u32, mut then: F) where F: FnMut(&mut Filter) {
