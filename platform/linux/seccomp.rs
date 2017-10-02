@@ -23,7 +23,9 @@ use profile::{Operation, Profile};
 
 use libc::{self, AF_INET, AF_INET6, AF_UNIX, AF_NETLINK};
 use libc::{c_char, c_int, c_long, c_ulong, c_ushort, c_void};
-use libc::{O_NONBLOCK, O_DIRECTORY, O_RDONLY, O_NOCTTY, O_CLOEXEC, FIONREAD, FIOCLEX};
+use libc::{O_NONBLOCK, O_DIRECTORY, O_RDONLY, O_NOCTTY, O_CLOEXEC};
+use libc::{TCGETS, TIOCGWINSZ, FIONREAD, FIOCLEX};
+use libc::ENOTTY;
 use libc::{MADV_NORMAL, MADV_RANDOM, MADV_SEQUENTIAL, MADV_WILLNEED, MADV_DONTNEED};
 use libc::SIGCHLD;
 use std::ffi::CString;
@@ -49,7 +51,10 @@ const ARCH_NR: u32 = AUDIT_ARCH_PPC64;
 const ARCH_NR: u32 = AUDIT_ARCH_PPC64LE;
 
 const SECCOMP_RET_KILL: u32 = 0;
+const SECCOMP_RET_ERRNO: u32 = 0x0005_0000;
 const SECCOMP_RET_ALLOW: u32 = 0x7fff_0000;
+
+const SECCOMP_RET_DATA: u32 = 0x0000_ffff;
 
 const LD: u16 = 0x00;
 const JMP: u16 = 0x05;
@@ -200,6 +205,16 @@ const ALLOW_SYSCALL: sock_filter = sock_filter {
     jf: 0,
 };
 
+fn return_errno(errno: i32) -> sock_filter {
+    assert!(errno as u32 <= SECCOMP_RET_DATA);
+    sock_filter {
+        code: RET + K,
+        k: SECCOMP_RET_ERRNO | errno as u32,
+        jt: 0,
+        jf: 0,
+    }
+}
+
 const KILL_PROCESS: sock_filter = sock_filter {
     code: RET + K,
     k: SECCOMP_RET_KILL,
@@ -284,12 +299,20 @@ impl Filter {
                                          |filter| filter.allow_this_syscall())
             });
 
-            // Only allow limited `ioctl`s to be performed.
+            // Only allow limited file `ioctl`s to be performed.
             filter.if_syscall_is(libc::SYS_ioctl, |filter| {
                 filter.if_arg1_is(FIONREAD as u32, |filter| filter.allow_this_syscall());
                 filter.if_arg1_is(FIOCLEX as u32, |filter| filter.allow_this_syscall());
             })
         }
+
+        // Enable some tty ioctls, but only let them return ENOTTY.
+        // For sandboxed processes that actually need to use TTY ioctls we should
+        // introduce a dedicated Operation.
+        filter.if_syscall_is(libc::SYS_ioctl, |filter| {
+            filter.if_arg1_is(TCGETS as u32, |filter| filter.return_errno_for_this_syscall(ENOTTY));
+            filter.if_arg1_is(TIOCGWINSZ as u32, |filter| filter.return_errno_for_this_syscall(ENOTTY));
+        });
 
         if profile.allowed_operations().iter().any(|operation| {
             match *operation {
@@ -407,6 +430,9 @@ impl Filter {
 
     fn allow_this_syscall(&mut self) {
         self.program.push(ALLOW_SYSCALL)
+    }
+    fn return_errno_for_this_syscall(&mut self, errno: i32) {
+        self.program.push(return_errno(errno));
     }
 
     fn allow_syscalls(&mut self, syscalls: &[c_long]) {
