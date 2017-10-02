@@ -159,7 +159,7 @@ impl ChrootJail {
             mount(source_path.as_ptr(),
                   destination_path.as_ptr(),
                   bind.as_ptr(),
-                  MS_MGC_VAL | MS_BIND | MS_REC,
+                  MS_MGC_VAL | MS_BIND | MS_REC | libc::MS_RDONLY,
                   ptr::null_mut())
         };
         if result == 0 {
