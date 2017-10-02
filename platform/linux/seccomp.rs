@@ -199,11 +199,12 @@ static ALLOWED_SYSCALLS_FOR_NETWORK_OUTBOUND: [c_long; 3] = [
     libc::SYS_getsockname,
 ];
 
-static ALLOWED_SYSCALLS_FOR_PROCESS_CREATION: [c_long; 5] = [
+static ALLOWED_SYSCALLS_FOR_PROCESS_CREATION: [c_long; 6] = [
     libc::SYS_fork,
     libc::SYS_vfork,
     libc::SYS_execve,
     libc::SYS_execveat,
+    libc::SYS_setsid,
     libc::SYS_wait4,
 ];
 
