@@ -118,6 +118,13 @@ pub enum PathPattern {
     Literal(PathBuf),
     /// A directory and all of its contents, recursively.
     Subpath(PathBuf),
+    /// One specific path, aliased to another part of the file system.
+    /// Order: (dest, source).
+    LiteralAlias(PathBuf, PathBuf),
+    /// A directory and all of its contents, recursively, aliased to
+    /// another part of the file system.
+    /// Order: (dest, source).
+    SubpathAlias(PathBuf, PathBuf),
 }
 
 /// Describes a network address.

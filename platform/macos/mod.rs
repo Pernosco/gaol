@@ -26,11 +26,23 @@ static SANDBOX_PROFILE_PROLOGUE: &'static [u8] = b"
 (deny default)
 ";
 
+
 impl OperationSupport for profile::Operation {
     fn support(&self) -> OperationSupportLevel {
         match *self {
-            profile::Operation::FileReadAll(_) |
-            profile::Operation::FileReadMetadata(_) |
+            profile::Operation::FileReadAll(ref pattern) |
+            profile::Operation::FileReadMetadata(ref pattern) => {
+                match *pattern {
+                    PathPattern::Literal(_) |
+                    PathPattern::Subpath(_) => {
+                        OperationSupportLevel::CanBeAllowed
+                    }
+                    PathPattern::LiteralAlias(_, _) |
+                    PathPattern::SubpathAlias(_, _) => {
+                        OperationSupportLevel::NeverAllowed
+                    }
+                }
+            }
             profile::Operation::NetworkOutbound(AddressPattern::All) |
             profile::Operation::NetworkOutbound(AddressPattern::Tcp(_)) |
             profile::Operation::NetworkOutbound(AddressPattern::LocalSocket(_)) |
@@ -158,6 +170,7 @@ fn write_file_pattern(sandbox_profile: &mut Vec<u8>, path_pattern: &PathPattern)
             sandbox_profile.write_all(b"(subpath ").unwrap();
             write_path(sandbox_profile, path)
         }
+        _ => panic!("File aliasing not supported")
     }
     sandbox_profile.write_all(b")").unwrap()
 }

@@ -73,12 +73,17 @@ impl ChrootJail {
         }
 
         for operation in profile.allowed_operations().iter() {
-            match *operation {
-                Operation::FileReadAll(PathPattern::Literal(ref path)) |
-                Operation::FileReadAll(PathPattern::Subpath(ref path)) => {
-                    try!(jail.bind_mount(path));
+            if let Operation::FileReadAll(ref pattern) = *operation {
+                match *pattern {
+                    PathPattern::Literal(ref path) |
+                    PathPattern::Subpath(ref path) => {
+                        try!(jail.bind_mount(path, path));
+                    }
+                    PathPattern::LiteralAlias(ref dst, ref src) |
+                    PathPattern::SubpathAlias(ref dst, ref src) => {
+                        try!(jail.bind_mount(dst, src));
+                    }
                 }
-                _ => {}
             }
         }
 
@@ -106,37 +111,38 @@ impl ChrootJail {
     }
 
     /// Bind mounts a path into our chroot jail.
-    fn bind_mount(&self, source_path: &Path) -> Result<(),c_int> {
+    fn bind_mount(&self, dest_path: &Path, source_path: &Path) -> Result<(),c_int> {
         // Create all intermediate directories.
-        let mut destination_path = self.directory.clone();
+        let mut jail_path = self.directory.clone();
         let mut components: Vec<OsString> =
-            source_path.components().skip(1)
+            dest_path.components().skip(1)
                                     .map(|component| component.as_os_str().to_os_string())
                                     .collect();
         let last_component = components.pop();
         for component in components.into_iter() {
-            destination_path.push(component);
-            if fs::create_dir(&destination_path).is_err() {
+            jail_path.push(component);
+            if fs::create_dir(&jail_path).is_err() {
                 return Err(-1)
             }
         }
 
         // Create the mount file or directory.
         if let Some(last_component) = last_component {
-            destination_path.push(last_component);
+            jail_path.push(last_component);
             match fs::metadata(source_path) {
                 Ok(ref metadata) if metadata.is_dir() => {
-                    if fs::create_dir(&destination_path).is_err() {
+                    if fs::create_dir(&jail_path).is_err() {
                         return Err(-1)
                     }
                 }
                 Ok(_) => {
-                    if File::create(&destination_path).is_err() {
+                    if File::create(&jail_path).is_err() {
                         return Err(-1)
                     }
                 }
                 Err(_) => {
                     // The source directory didn't exist. Just don't create the bind mount.
+                    warn!("Bind mount of {:?} into {:?} skipped", source_path, dest_path);
                     return Ok(())
                 }
             }
@@ -147,17 +153,17 @@ impl ChrootJail {
                                                   .to_str()
                                                   .unwrap()
                                                   .as_bytes()).unwrap();
-        let destination_path = CString::new(destination_path.as_os_str()
-                                                            .to_str()
-                                                            .unwrap()
-                                                            .as_bytes()).unwrap();
+        let jail_path = CString::new(jail_path.as_os_str()
+                                              .to_str()
+                                              .unwrap()
+                                              .as_bytes()).unwrap();
         let bind = CString::new("bind").unwrap();
-        // Readonly directories and files should be mounted readonly as an
+        // Readonly directories and files are mounted readonly as an
         // extra layer of security; currently we deny opening writeable files using
         // the seccomp filter, but that could change or have a bug.
         let result = unsafe {
             mount(source_path.as_ptr(),
-                  destination_path.as_ptr(),
+                  jail_path.as_ptr(),
                   bind.as_ptr(),
                   MS_MGC_VAL | MS_BIND | MS_REC | libc::MS_RDONLY,
                   ptr::null_mut())
