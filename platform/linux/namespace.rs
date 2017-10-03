@@ -121,8 +121,10 @@ impl ChrootJail {
         let last_component = components.pop();
         for component in components.into_iter() {
             jail_path.push(component);
-            if fs::create_dir(&jail_path).is_err() {
-                return Err(-1)
+            if let Err(e) = fs::create_dir(&jail_path) {
+                if e.kind() != io::ErrorKind::AlreadyExists {
+                    return Err(-1)
+                }
             }
         }
 
