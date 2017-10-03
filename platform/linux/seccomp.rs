@@ -26,7 +26,7 @@ use libc::{c_char, c_int, c_long, c_ulong, c_ushort, c_void};
 use libc::{O_NONBLOCK, O_DIRECTORY, O_RDONLY, O_NOCTTY, O_CLOEXEC, O_NOFOLLOW};
 use libc::{TCGETS, TIOCGWINSZ, TCSBRK, FIONREAD, FIOCLEX};
 use libc::{F_DUPFD, F_DUPFD_CLOEXEC, F_GETFD, F_SETFD, F_GETFL, F_SETFL};
-use libc::ENOTTY;
+use libc::{EACCES, ENOTTY};
 use libc::{MADV_NORMAL, MADV_RANDOM, MADV_SEQUENTIAL, MADV_WILLNEED, MADV_DONTNEED};
 use libc::SIGCHLD;
 use std::ffi::CString;
@@ -318,6 +318,10 @@ impl Filter {
             filter.if_syscall_is(libc::SYS_ioctl, |filter| {
                 filter.if_arg1_is(FIONREAD as u32, |filter| filter.allow_this_syscall());
                 filter.if_arg1_is(FIOCLEX as u32, |filter| filter.allow_this_syscall());
+            });
+        } else {
+            filter.if_syscall_is(libc::SYS_socket, |filter| {
+                filter.return_errno_for_this_syscall(EACCES);
             });
         }
 
