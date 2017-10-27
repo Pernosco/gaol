@@ -252,7 +252,6 @@ unsafe fn handle_error<T>(result: io::Result<T>, pipe: RawFd) -> T {
     match result {
         Ok(v) => v,
         Err(e) => {
-            println!("OPERATION FAILED: {}", e);
             pipe_write(pipe, -e.raw_os_error().unwrap_or(EINVAL));
             libc::exit(0);
         }
@@ -335,7 +334,6 @@ pub fn start(profile: &Profile, command: &mut Command) -> io::Result<Process> {
                     }
 
                     handle_error(command.inner.before_exec(&[pipe_fds[1]]), pipe_fds[1]);
-                    println!("ABOUT TO EXEC");
                     // Go ahead and start the command.
                     handle_error::<()>(Err(unix::process::exec(command)), pipe_fds[1]);
                 }
