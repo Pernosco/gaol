@@ -324,10 +324,6 @@ impl Filter {
                 filter.if_arg1_is(FIONREAD as u32, |filter| filter.allow_this_syscall());
                 filter.if_arg1_is(FIOCLEX as u32, |filter| filter.allow_this_syscall());
             });
-        } else {
-            filter.if_syscall_is(libc::SYS_socket, |filter| {
-                filter.return_errno_for_this_syscall(EACCES);
-            });
         }
 
         // Only allow limited file `fcntl`s to be performed.
@@ -378,6 +374,11 @@ impl Filter {
                 })
             });
         } else {
+            // When networking is disabled, allow socket() to fail with EACCES. This is needed
+            // for glibc getpwnam etc which can try to create a socket to talk to nscd.
+            filter.if_syscall_is(libc::SYS_socket, |filter| {
+                filter.return_errno_for_this_syscall(EACCES);
+            });
             // Allow AF_UNIX socketpairs
             filter.if_syscall_is(libc::SYS_socketpair, |filter| {
                 filter.if_arg0_is(AF_UNIX as u32, |filter| filter.allow_this_syscall());
