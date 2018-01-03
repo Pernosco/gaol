@@ -144,7 +144,9 @@ impl ChrootJail {
                 }
                 Err(_) => {
                     // The source directory didn't exist. Just don't create the bind mount.
-                    warn!("Bind mount of {:?} into {:?} skipped", source_path, dest_path);
+                    // Don't log anything here; it's not safe to use logging in a forked
+                    // but not execed process, since the logging lock could have been held
+                    // at the time of the fork.
                     return Ok(())
                 }
             }
