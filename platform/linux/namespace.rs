@@ -104,7 +104,7 @@ impl ChrootJail {
             return Err(result)
         }
 
-        match env::set_current_dir(&Path::new(".")) {
+        match env::set_current_dir("/") {
             Ok(_) => Ok(()),
             Err(_) => Err(-1),
         }
