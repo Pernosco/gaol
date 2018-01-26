@@ -184,7 +184,7 @@ static ALLOWED_SYSCALLS_FOR_FILE_READ: [c_long; 15] = [
     libc::SYS_access,
     libc::SYS_chdir,
     libc::SYS_fstat,
-    262, // libc::SYS_fstatat64
+    libc::SYS_newfstatat, // SYS_fstatat64
     libc::SYS_fstatfs,
     libc::SYS_getcwd,
     libc::SYS_getdents,
