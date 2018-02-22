@@ -121,7 +121,7 @@ static FILTER_PROLOGUE: [sock_filter; 3] = [
 
 // A most untimely end...
 static FILTER_EPILOGUE: [sock_filter; 1] = [
-    KILL_PROCESS,
+    SEND_SIGSYS,
 ];
 
 /// Syscalls that are always allowed.
@@ -234,9 +234,9 @@ fn return_errno(errno: i32) -> sock_filter {
     }
 }
 
-const KILL_PROCESS: sock_filter = sock_filter {
+const SEND_SIGSYS: sock_filter = sock_filter {
     code: RET + K,
-    k: SECCOMP_RET_KILL,
+    k: SECCOMP_RET_TRAP,
     jt: 0,
     jf: 0,
 };
