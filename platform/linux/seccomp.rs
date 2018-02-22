@@ -51,7 +51,7 @@ const ARCH_NR: u32 = AUDIT_ARCH_PPC64;
 #[cfg(all(target_arch="powerpc64", target_endian="little"))]
 const ARCH_NR: u32 = AUDIT_ARCH_PPC64LE;
 
-const SECCOMP_RET_KILL: u32 = 0;
+const SECCOMP_RET_TRAP: u32 = 0x0003_0000;
 const SECCOMP_RET_ERRNO: u32 = 0x0005_0000;
 const SECCOMP_RET_ALLOW: u32 = 0x7fff_0000;
 
@@ -283,7 +283,7 @@ const VALIDATE_ARCHITECTURE_1: sock_filter = sock_filter {
     jf: 0,
 };
 
-const VALIDATE_ARCHITECTURE_2: sock_filter = KILL_PROCESS;
+const VALIDATE_ARCHITECTURE_2: sock_filter = SEND_SIGSYS;
 
 pub struct Filter {
     program: Vec<sock_filter>,
