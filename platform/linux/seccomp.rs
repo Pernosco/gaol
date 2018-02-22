@@ -125,7 +125,7 @@ static FILTER_EPILOGUE: [sock_filter; 1] = [
 ];
 
 /// Syscalls that are always allowed.
-pub static ALLOWED_SYSCALLS: [c_long; 52] = [
+pub static ALLOWED_SYSCALLS: [c_long; 53] = [
     libc::SYS_alarm,
     libc::SYS_brk,
     libc::SYS_clock_gettime,
@@ -162,6 +162,7 @@ pub static ALLOWED_SYSCALLS: [c_long; 52] = [
     libc::SYS_recvfrom,
     libc::SYS_recvmsg,
     libc::SYS_recvmmsg,
+    libc::SYS_restart_syscall,
     libc::SYS_rt_sigaction,
     libc::SYS_rt_sigprocmask,
     libc::SYS_rt_sigreturn,
