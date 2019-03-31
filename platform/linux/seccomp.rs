@@ -82,6 +82,8 @@ const ARCH_SET_FS: u32 = 0x1002;
 const ARCH_GET_FS: u32 = 0x1003;
 const ARCH_GET_GS: u32 = 0x1004;
 
+const PR_SET_NAME: u32 = 15;
+
 const EM_386: u32 = 3;
 const EM_PPC: u32 = 20;
 const EM_PPC64: u32 = 21;
@@ -303,6 +305,11 @@ impl Filter {
             filter.if_arg0_is(ARCH_SET_FS as u32, |filter| filter.allow_this_syscall());
             filter.if_arg0_is(ARCH_GET_FS as u32, |filter| filter.allow_this_syscall());
             filter.if_arg0_is(ARCH_GET_GS as u32, |filter| filter.allow_this_syscall());
+        });
+
+        // rust threadpools use these
+        filter.if_syscall_is(libc::SYS_prctl, |filter| {
+            filter.if_arg0_is(PR_SET_NAME as u32, |filter| filter.allow_this_syscall());
         });
 
         if profile.allowed_operations().iter().any(|operation| {
