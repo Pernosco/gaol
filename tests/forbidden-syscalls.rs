@@ -41,7 +41,9 @@ pub fn main() {
                 if (syscall % num_cpus) != index {
                     continue
                 }
-                if ALLOWED_SYSCALLS.iter().any(|number| *number == syscall) {
+                if ALLOWED_SYSCALLS.iter().any(|number| *number == syscall) ||
+                    syscall == libc::SYS_socket || syscall == libc::SYS_socketpair ||
+                    syscall == libc::SYS_clone || syscall == libc::SYS_madvise {
                     continue
                 }
                 let arg = format!("{}", syscall);
@@ -49,7 +51,7 @@ pub fn main() {
                                                     .unwrap()
                                                     .wait()
                                                     .unwrap();
-                assert!(!status.success());
+                assert!(!status.success(), "Syscall {} succeeded", syscall);
             }
         })
     }).collect::<Vec<_>>();
