@@ -81,6 +81,7 @@ const ARCH_SET_GS: u32 = 0x1001;
 const ARCH_SET_FS: u32 = 0x1002;
 const ARCH_GET_FS: u32 = 0x1003;
 const ARCH_GET_GS: u32 = 0x1004;
+const ARCH_CET_STATUS: u32 = 0x3001;
 
 const PR_SET_NAME: u32 = 15;
 
@@ -305,6 +306,7 @@ impl Filter {
             filter.if_arg0_is(ARCH_SET_FS as u32, |filter| filter.allow_this_syscall());
             filter.if_arg0_is(ARCH_GET_FS as u32, |filter| filter.allow_this_syscall());
             filter.if_arg0_is(ARCH_GET_GS as u32, |filter| filter.allow_this_syscall());
+            filter.if_arg0_is(ARCH_CET_STATUS as u32, |filter| filter.allow_this_syscall());
         });
 
         // rust threadpools use these
