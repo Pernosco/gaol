@@ -447,7 +447,9 @@ impl Filter {
                 MADV_RANDOM,
                 MADV_SEQUENTIAL,
                 MADV_WILLNEED,
-                MADV_DONTNEED
+                MADV_DONTNEED,
+                // Plus other values that I like.
+                libc::MADV_FREE,
             ].iter() {
                 filter.if_arg2_is(*mode as u32, |filter| filter.allow_this_syscall())
             }
