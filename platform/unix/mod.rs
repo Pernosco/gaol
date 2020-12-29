@@ -9,6 +9,7 @@
 // except according to those terms.
 
 use std::io;
+use std::mem;
 use std::os::unix::io::RawFd;
 
 pub mod process;
@@ -43,7 +44,7 @@ pub trait CommandExt {
     /// Avoid closing any file descriptors in the passed-in list. These are
     /// O_CLOEXEC so will automatically close when the command runs.
     fn before_sandbox<F>(&mut self, f: F) -> &mut Command
-        where F: FnMut(&[RawFd]) -> io::Result<()> + Send + Sync + 'static;
+        where F: FnOnce(&[RawFd]) -> io::Result<()> + Send + Sync + 'static;
     /// Schedules a closure to be run after any pre-exec sandbox controls are
     /// but before exec, in the process that will exec. On Linux, this closure
     /// can call ChildSandbox::activate(), letting you sandbox a foreign
@@ -72,12 +73,12 @@ pub trait CommandExt {
     /// Avoid closing any file descriptors in the passed-in list. These are
     /// O_CLOEXEC so will automatically close when the command runs.
     fn before_exec<F>(&mut self, f: F) -> &mut Command
-        where F: FnMut(&[RawFd]) -> io::Result<()> + Send + Sync + 'static;
+        where F: FnOnce(&[RawFd]) -> io::Result<()> + Send + Sync + 'static;
 }
 
 pub struct CommandInner {
-    before_sandbox_closures: Vec<Box<FnMut(&[RawFd]) -> io::Result<()> + Send + Sync + 'static>>,
-    before_exec_closures: Vec<Box<FnMut(&[RawFd]) -> io::Result<()> + Send + Sync + 'static>>,
+    before_sandbox_closures: Vec<Box<dyn FnOnce(&[RawFd]) -> io::Result<()> + Send + Sync + 'static>>,
+    before_exec_closures: Vec<Box<dyn FnOnce(&[RawFd]) -> io::Result<()> + Send + Sync + 'static>>,
 }
 
 impl CommandInner {
@@ -89,30 +90,28 @@ impl CommandInner {
     }
 
     pub fn before_sandbox(&mut self, preserve_fds: &[RawFd]) -> io::Result<()> {
-        for c in self.before_sandbox_closures.iter_mut() {
+        for c in mem::replace(&mut self.before_sandbox_closures, Vec::new()) {
             c(preserve_fds)?;
         }
-        self.before_sandbox_closures.clear();
         Ok(())
     }
 
     pub fn before_exec(&mut self, preserve_fds: &[RawFd]) -> io::Result<()> {
-        for c in self.before_exec_closures.iter_mut() {
+        for c in mem::replace(&mut self.before_exec_closures, Vec::new()) {
             c(preserve_fds)?;
         }
-        self.before_exec_closures.clear();
         Ok(())
     }
 }
 
 impl CommandExt for Command {
     fn before_sandbox<F>(&mut self, f: F) -> &mut Command
-        where F: FnMut(&[RawFd]) -> io::Result<()> + Send + Sync + 'static {
+        where F: FnOnce(&[RawFd]) -> io::Result<()> + Send + Sync + 'static {
         self.inner.before_sandbox_closures.push(Box::new(f));
         self
     }
     fn before_exec<F>(&mut self, f: F) -> &mut Command
-        where F: FnMut(&[RawFd]) -> io::Result<()> + Send + Sync + 'static {
+        where F: FnOnce(&[RawFd]) -> io::Result<()> + Send + Sync + 'static {
         self.inner.before_exec_closures.push(Box::new(f));
         self
     }
