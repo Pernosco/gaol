@@ -128,7 +128,7 @@ static FILTER_EPILOGUE: [sock_filter; 1] = [
 ];
 
 /// Syscalls that are always allowed.
-pub static ALLOWED_SYSCALLS: [c_long; 54] = [
+pub static ALLOWED_SYSCALLS: [c_long; 58] = [
     libc::SYS_alarm,
     libc::SYS_brk,
     libc::SYS_clock_gettime,
@@ -137,6 +137,10 @@ pub static ALLOWED_SYSCALLS: [c_long; 54] = [
     libc::SYS_dup,
     libc::SYS_dup2,
     libc::SYS_dup3,
+    libc::SYS_epoll_create1,
+    libc::SYS_epoll_ctl,
+    libc::SYS_epoll_wait,
+    libc::SYS_epoll_pwait,
     libc::SYS_exit,
     libc::SYS_exit_group,
     libc::SYS_futex,
