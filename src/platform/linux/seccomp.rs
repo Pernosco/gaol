@@ -16,10 +16,10 @@
 
 #![allow(non_upper_case_globals, unused_imports)]
 
-use platform::linux::namespace::{CLONE_CHILD_CLEARTID, CLONE_FILES, CLONE_FS};
-use platform::linux::namespace::{CLONE_PARENT_SETTID, CLONE_SETTLS, CLONE_SIGHAND, CLONE_SYSVSEM};
-use platform::linux::namespace::{CLONE_THREAD, CLONE_VM, CLONE_VFORK};
-use profile::{Operation, Profile};
+use crate::platform::linux::namespace::{CLONE_CHILD_CLEARTID, CLONE_FILES, CLONE_FS};
+use crate::platform::linux::namespace::{CLONE_PARENT_SETTID, CLONE_SETTLS, CLONE_SIGHAND, CLONE_SYSVSEM};
+use crate::platform::linux::namespace::{CLONE_THREAD, CLONE_VM, CLONE_VFORK};
+use crate::profile::{Operation, Profile};
 
 use libc::{self, AF_INET, AF_INET6, AF_UNIX, AF_NETLINK};
 use libc::{c_char, c_int, c_long, c_ulong, c_ushort, c_void};

@@ -10,7 +10,7 @@
 
 //! Child process management on POSIX systems.
 
-use sandbox::Command;
+use crate::sandbox::Command;
 
 use libc::{c_char, c_int, pid_t, WNOHANG};
 use std::ffi::CString;

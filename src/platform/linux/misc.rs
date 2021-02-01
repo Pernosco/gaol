@@ -10,7 +10,7 @@
 
 //! Sandboxing on Linux via miscellaneous kernel features.
 
-use platform::linux::seccomp;
+use crate::platform::linux::seccomp;
 
 use libc::{self, EPERM, c_int, mode_t};
 use std::io;

@@ -10,11 +10,11 @@
 
 //! Sandboxing on Linux via namespaces.
 
-use platform::linux::seccomp;
-use platform::unix::process::Process;
-use platform::unix;
-use profile::{Operation, PathPattern, Profile}; 
-use sandbox::Command;
+use crate::platform::linux::seccomp;
+use crate::platform::unix::process::Process;
+use crate::platform::unix;
+use crate::profile::{Operation, PathPattern, Profile};
+use crate::sandbox::Command;
 
 use libc::{self, EINVAL, O_CLOEXEC, c_char, c_int, c_ulong, c_void, gid_t, pid_t, size_t, ssize_t, uid_t};
 use std::env;
@@ -30,8 +30,8 @@ use std::ptr;
 
 /// Creates a namespace and sets up a chroot jail.
 pub fn activate(profile: &Profile) -> Result<(),c_int> {
-    let jail = try!(ChrootJail::new(profile));
-    try!(jail.enter());
+    let jail = ChrootJail::new(profile)?;
+    jail.enter()?;
     drop_capabilities()
 }
 
@@ -77,11 +77,11 @@ impl ChrootJail {
                 match *pattern {
                     PathPattern::Literal(ref path) |
                     PathPattern::Subpath(ref path) => {
-                        try!(jail.bind_mount(path, path));
+                        jail.bind_mount(path, path)?;
                     }
                     PathPattern::LiteralAlias(ref dst, ref src) |
                     PathPattern::SubpathAlias(ref dst, ref src) => {
-                        try!(jail.bind_mount(dst, src));
+                        jail.bind_mount(dst, src)?;
                     }
                 }
             }
@@ -207,12 +207,12 @@ unsafe fn prepare_user_and_pid_namespaces(parent_uid: uid_t, parent_gid: gid_t) 
     assert!(unshare(CLONE_NEWUSER | CLONE_NEWPID) == 0);
 
     // See http://crbug.com/457362 for more information on this.
-    try!(try!(File::create(&Path::new("/proc/self/setgroups"))).write_all(b"deny"));
+    File::create(&Path::new("/proc/self/setgroups"))?.write_all(b"deny")?;
 
     let gid_contents = format!("0 {} 1", parent_gid);
-    try!(try!(File::create(&Path::new("/proc/self/gid_map"))).write_all(gid_contents.as_bytes()));
+    File::create(&Path::new("/proc/self/gid_map"))?.write_all(gid_contents.as_bytes())?;
     let uid_contents = format!("0 {} 1", parent_uid);
-    try!(try!(File::create(&Path::new("/proc/self/uid_map"))).write_all(uid_contents.as_bytes()));
+    File::create(&Path::new("/proc/self/uid_map"))?.write_all(uid_contents.as_bytes())?;
     Ok(())
 }
 

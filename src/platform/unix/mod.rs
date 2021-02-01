@@ -14,7 +14,7 @@ use std::os::unix::io::RawFd;
 
 pub mod process;
 
-use sandbox::Command;
+use crate::sandbox::Command;
 
 pub trait CommandExt {
     /// Schedules a closure to be run after forking but before any sandbox
