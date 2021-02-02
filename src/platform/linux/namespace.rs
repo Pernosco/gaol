@@ -17,6 +17,7 @@ use crate::profile::{Operation, PathPattern, Profile};
 use crate::sandbox::Command;
 
 use libc::{self, EINVAL, O_CLOEXEC, c_char, c_int, c_ulong, c_void, gid_t, pid_t, size_t, ssize_t, uid_t};
+use log::warn;
 use std::env;
 use std::ffi::{CString, OsStr, OsString};
 use std::fs::{self, File};
@@ -231,30 +232,83 @@ unsafe fn pipe_write(pipe: RawFd, value: i32) {
                         mem::size_of::<i32>() as size_t) == mem::size_of::<i32>() as ssize_t);
 }
 
-unsafe fn pipe_read(pipe: RawFd) -> io::Result<Vec<i32>> {
-    let mut ret = Vec::new();
-    loop {
-        let mut v: i32 = 0;
-        let bytes = libc::read(pipe,
-                               &mut v as *mut i32 as *mut c_void,
-                               mem::size_of::<i32>() as size_t);
-        if bytes == mem::size_of::<i32>() as ssize_t {
-            ret.push(v);
-        } else if bytes == 0 {
-            return Ok(ret);
-        } else if bytes > 0 {
-            panic!("No idea how we got a partial read in this pipe");
-        } else {
-            return Err(io::Error::last_os_error())
-        }
+unsafe fn pipe_write_str(pipe: RawFd, s: &str) {
+    assert!(libc::write(pipe,
+                        &s.len() as *const usize as *const c_void,
+                        mem::size_of::<usize>() as size_t) == mem::size_of::<size_t>() as ssize_t);
+    assert!(libc::write(pipe,
+                        s.as_bytes().as_ptr() as *const u8 as *const c_void,
+                        s.len() as size_t) == s.len() as ssize_t);
+}
+
+unsafe fn pipe_read(pipe: RawFd) -> io::Result<Option<i32>> {
+    let mut v: i32 = 0;
+    let bytes = libc::read(pipe,
+                           &mut v as *mut i32 as *mut c_void,
+                           mem::size_of::<i32>() as size_t);
+    if bytes == mem::size_of::<i32>() as ssize_t {
+        Ok(Some(v))
+    } else if bytes == 0 {
+        Ok(None)
+    } else if bytes > 0 {
+        panic!("No idea how we got a partial read in this pipe");
+    } else {
+        Err(io::Error::last_os_error())
     }
 }
 
-unsafe fn handle_error<T>(result: io::Result<T>, pipe: RawFd) -> T {
+unsafe fn pipe_read_str(pipe: RawFd) -> io::Result<String> {
+    let mut v: usize = 0;
+    let bytes = libc::read(pipe,
+                           &mut v as *mut usize as *mut c_void,
+                           mem::size_of::<usize>() as size_t);
+    if bytes == mem::size_of::<usize>() as ssize_t {
+        // Do nothing
+    } else if bytes >= 0 {
+        panic!("No idea how we got a partial read in this pipe");
+    } else {
+        return Err(io::Error::last_os_error());
+    }
+
+    let mut buf = Vec::new();
+    buf.resize(v, 0);
+    let bytes = libc::read(pipe,
+                           buf[..].as_mut_ptr() as *mut u8 as *mut c_void,
+                           v as size_t);
+    if bytes == v as ssize_t {
+        // Do nothing
+    } else if bytes >= 0 {
+        panic!("No idea how we got a partial read in this pipe");
+    } else {
+        return Err(io::Error::last_os_error());
+    }
+
+    Ok(String::from_utf8(buf).unwrap())
+}
+
+enum PipeEntry {
+    Pid(i32),
+    Err(i32, String),
+}
+
+unsafe fn pipe_read_all(pipe: RawFd) -> io::Result<Vec<PipeEntry>> {
+    let mut ret = Vec::new();
+    while let Some(v) = pipe_read(pipe)? {
+        if v > 0 {
+            ret.push(PipeEntry::Pid(v));
+        } else {
+            ret.push(PipeEntry::Err(v, pipe_read_str(pipe)?));
+        }
+    }
+    Ok(ret)
+}
+
+unsafe fn handle_error<T>(result: io::Result<T>, pipe: RawFd, context: &str) -> T {
     match result {
         Ok(v) => v,
         Err(e) => {
             pipe_write(pipe, -e.raw_os_error().unwrap_or(EINVAL));
+            pipe_write_str(pipe, context);
             libc::exit(0);
         }
     }
@@ -303,6 +357,7 @@ pub fn start(profile: &Profile, command: &mut Command) -> io::Result<Process> {
         // Create a pipe so we can communicate the PID of our grandchild back.
         let mut pipe_fds = [0, 0];
         if libc::pipe2(&mut pipe_fds[0], O_CLOEXEC) != 0 {
+            warn!("Pipe creation failed: {}", io::Error::last_os_error());
             return Err(io::Error::last_os_error());
         }
 
@@ -320,24 +375,24 @@ pub fn start(profile: &Profile, command: &mut Command) -> io::Result<Process> {
             }
         };
         if forked == 0 {
-            handle_error(harden_limits(), pipe_fds[1]);
+            handle_error(harden_limits(), pipe_fds[1], "harden_limits");
 
-            handle_error(command.inner.before_sandbox(&[pipe_fds[1]]), pipe_fds[1]);
+            handle_error(command.inner.before_sandbox(&[pipe_fds[1]]), pipe_fds[1], "before_sandbox");
             // Set up our user and PID namespaces. The PID namespace won't actually come into
             // effect until the next fork(), because PIDs are immutable.
-            handle_error(prepare_user_and_pid_namespaces(parent_uid, parent_gid), pipe_fds[1]);
+            handle_error(prepare_user_and_pid_namespaces(parent_uid, parent_gid), pipe_fds[1], "prepare_user_and_pid_namespaces");
 
             // Fork again, to enter the PID namespace.
-            match handle_error(fork_wrapper(), pipe_fds[1]) {
+            match handle_error(fork_wrapper(), pipe_fds[1], "inner fork") {
                 0 => {
                     // Enter the auxiliary namespaces.
                     if unshare(unshare_flags) != 0 {
-                        handle_error::<()>(Err(io::Error::last_os_error()), pipe_fds[1]);
+                        handle_error::<()>(Err(io::Error::last_os_error()), pipe_fds[1], "unshare");
                     }
 
-                    handle_error(command.inner.before_exec(&[pipe_fds[1]]), pipe_fds[1]);
+                    handle_error(command.inner.before_exec(&[pipe_fds[1]]), pipe_fds[1], "before_exec");
                     // Go ahead and start the command.
-                    handle_error::<()>(Err(unix::process::exec(command)), pipe_fds[1]);
+                    handle_error::<()>(Err(unix::process::exec(command)), pipe_fds[1], "exec");
                 }
                 grandchild_pid => {
                     // Send the PID of our child up to our parent and exit.
@@ -357,22 +412,29 @@ pub fn start(profile: &Profile, command: &mut Command) -> io::Result<Process> {
         libc::close(pipe_fds[1]);
 
         // Retrieve our grandchild's PID.
-        let pipe_vals = pipe_read(pipe_fds[0]);
+        let pipe_vals = pipe_read_all(pipe_fds[0]);
         libc::close(pipe_fds[0]);
         let pipe_vals = pipe_vals?;
 
         // We could get a PID followed by an error from the grandchild.
-        let grandchild_pid = pipe_vals.iter().find(|v| **v >= 0);
-        if let Some(err) = pipe_vals.iter().find(|v| **v < 0) {
-            if let Some(pid) = grandchild_pid {
-                // Reap failed grandchild zombie.
-                waitpid(*pid, ptr::null_mut(), 0);
+        let mut grandchild_pid = None;
+        for e in pipe_vals {
+            match e {
+                PipeEntry::Pid(pid) => grandchild_pid = Some(pid),
+                PipeEntry::Err(v, context) => {
+                    if let Some(pid) = grandchild_pid {
+                        // Reap failed grandchild zombie.
+                        waitpid(pid, ptr::null_mut(), 0);
+                    }
+                    let err = io::Error::from_raw_os_error(-v);
+                    warn!("Failed to start grandchild in {}: {}", context, err);
+                    return Err(err);
+                }
             }
-            return Err(io::Error::from_raw_os_error(-*err));
         }
 
         Ok(Process {
-            pid: *grandchild_pid.expect("We should have something in the pipe"),
+            pid: grandchild_pid.expect("We should have something in the pipe"),
         })
     }
 }
