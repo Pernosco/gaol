@@ -14,6 +14,7 @@ use crate::profile::{self, AddressPattern, OperationSupport, OperationSupportLev
 use crate::sandbox::{ChildSandboxMethods, Command, SandboxMethods};
 
 use std::io;
+use libc::{c_void, size_t, ssize_t};
 
 pub mod misc;
 pub mod namespace;
@@ -83,6 +84,23 @@ impl ChildSandbox {
         ChildSandbox {
             profile: profile,
         }
+    }
+}
+
+fn gettid() -> libc::pid_t {
+    unsafe { libc::syscall(libc::SYS_gettid) as libc::pid_t }
+}
+
+fn getpid() -> libc::pid_t {
+    unsafe { libc::getpid() }
+}
+
+pub fn log_stderr(s: &str) {
+    let s = format!("WARN:gaol::platform::linux:{}.{}: {}\n", getpid(), gettid(), s);
+    unsafe {
+        assert!(libc::write(2,
+                            s.as_bytes().as_ptr() as *const u8 as *const c_void,
+                            s.len() as size_t) == s.len() as ssize_t);
     }
 }
 

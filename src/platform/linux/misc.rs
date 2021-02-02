@@ -10,7 +10,7 @@
 
 //! Sandboxing on Linux via miscellaneous kernel features.
 
-use crate::platform::linux::seccomp;
+use crate::platform::linux::{log_stderr, seccomp};
 
 use libc::{self, EPERM, c_int, mode_t};
 use std::io;
@@ -25,6 +25,7 @@ pub fn activate() -> Result<(),c_int> {
          setrlimit(RLIMIT_FSIZE, &rlimit)
     };
     if result != 0 {
+        log_stderr("Failed to set RLIMIT_FSIZE to zero");
         return Err(result)
     }
 
@@ -39,6 +40,7 @@ pub fn activate() -> Result<(),c_int> {
         seccomp::prctl(PR_SET_DUMPABLE, 0, 0, 0, 0)
     };
     if result != 0 {
+        log_stderr("Failed to PR_SET_DUMPABLE");
         return Err(result)
     }
 
@@ -48,6 +50,7 @@ pub fn activate() -> Result<(),c_int> {
         if libc::setsid() < 0 {
             let result = io::Error::last_os_error().raw_os_error().unwrap() as i32;
             if result != EPERM {
+                log_stderr("Failed to setsid");
                 return Err(result)
             }
         }
@@ -60,6 +63,7 @@ pub fn activate() -> Result<(),c_int> {
     if result == 0 {
         Ok(())
     } else {
+        log_stderr("Failed to clearenv");
         Err(result)
     }
 }

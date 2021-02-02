@@ -16,6 +16,7 @@
 
 #![allow(non_upper_case_globals, unused_imports)]
 
+use crate::platform::linux::log_stderr;
 use crate::platform::linux::namespace::{CLONE_CHILD_CLEARTID, CLONE_FILES, CLONE_FS};
 use crate::platform::linux::namespace::{CLONE_PARENT_SETTID, CLONE_SETTLS, CLONE_SIGHAND, CLONE_SYSVSEM};
 use crate::platform::linux::namespace::{CLONE_THREAD, CLONE_VM, CLONE_VFORK};
@@ -490,6 +491,7 @@ impl Filter {
         unsafe {
             let result = prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
             if result != 0 {
+                log_stderr("Failed to PR_SET_NO_NEW_PRIVS");
                 return Err(result)
             }
 
@@ -505,6 +507,7 @@ impl Filter {
             if result == 0 {
                 Ok(())
             } else {
+                log_stderr("Failed to PR_SET_SECCOMP SECCOMP_MODE_FILTER");
                 Err(result)
             }
         }

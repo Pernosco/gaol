@@ -10,7 +10,7 @@
 
 //! Sandboxing on Linux via namespaces.
 
-use crate::platform::linux::seccomp;
+use crate::platform::linux::{log_stderr, seccomp};
 use crate::platform::unix::process::Process;
 use crate::platform::unix;
 use crate::profile::{Operation, PathPattern, Profile};
@@ -48,6 +48,7 @@ impl ChrootJail {
         let mut prefix: Vec<u8> = prefix.as_bytes_with_nul().iter().map(|x| *x).collect();
         unsafe {
             if mkdtemp(prefix.as_mut_ptr() as *mut c_char).is_null() {
+                log_stderr("Failed to create temp directory");
                 return Err(-1)
             }
         }
@@ -70,6 +71,7 @@ impl ChrootJail {
                   ptr::null())
         };
         if result != 0 {
+            log_stderr("Failed to mount jail tmpfs");
             return Err(result)
         }
 
@@ -102,12 +104,16 @@ impl ChrootJail {
             chroot(directory.as_ptr())
         };
         if result != 0 {
+            log_stderr("Failed to chroot to jail directory");
             return Err(result)
         }
 
         match env::set_current_dir("/") {
             Ok(_) => Ok(()),
-            Err(_) => Err(-1),
+            Err(_) => {
+                log_stderr("Failed to set jail cwd to root");
+                Err(-1)
+            }
         }
     }
 
@@ -124,6 +130,7 @@ impl ChrootJail {
             jail_path.push(component);
             if let Err(e) = fs::create_dir(&jail_path) {
                 if e.kind() != io::ErrorKind::AlreadyExists {
+                    log_stderr("Failed to create bind mount ancestor directory");
                     return Err(-1)
                 }
             }
@@ -135,11 +142,13 @@ impl ChrootJail {
             match fs::metadata(source_path) {
                 Ok(ref metadata) if metadata.is_dir() => {
                     if fs::create_dir(&jail_path).is_err() {
+	                log_stderr("Failed to create mount directory");
                         return Err(-1)
                     }
                 }
                 Ok(_) => {
                     if File::create(&jail_path).is_err() {
+	                log_stderr("Failed to create mount file");
                         return Err(-1)
                     }
                 }
@@ -176,6 +185,7 @@ impl ChrootJail {
         if result == 0 {
             Ok(())
         } else {
+            log_stderr("Failed to perform bind mount");
             Err(result)
         }
     }
