@@ -93,7 +93,7 @@ pub fn main() {
                              .unwrap()
                              .wait()
                              .unwrap();
-    assert!(status.success());
+    assert!(status.success(), "Got status {:?}", status);
 
     test_error_propagation();
 }
