@@ -14,7 +14,7 @@ use crate::profile::{self, AddressPattern, OperationSupport, OperationSupportLev
 use crate::sandbox::{ChildSandboxMethods, Command, SandboxMethods};
 
 use std::io;
-use libc::{c_void, size_t, ssize_t};
+use libc::{c_int, c_void, size_t, ssize_t};
 
 pub mod misc;
 pub mod namespace;
@@ -105,17 +105,10 @@ pub fn log_stderr(s: &str) {
 }
 
 impl ChildSandboxMethods for ChildSandbox {
-    fn activate(&self) -> Result<(),()> {
-        if namespace::activate(&self.profile).is_err() {
-            return Err(())
-        }
-        if misc::activate().is_err() {
-            return Err(())
-        }
-        match Filter::new(&self.profile).activate() {
-            Ok(_) => Ok(()),
-            Err(_) => Err(()),
-        }
+    fn activate(&self) -> Result<(),c_int> {
+        namespace::activate(&self.profile)?;
+        misc::activate()?;
+        Filter::new(&self.profile).activate()
     }
 }
 

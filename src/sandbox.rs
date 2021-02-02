@@ -18,6 +18,7 @@ use std::convert::AsRef;
 use std::env;
 use std::ffi::{CString, OsStr};
 use std::io;
+use libc::c_int;
 
 pub use crate::platform::{ChildSandbox, CommandInner, Sandbox};
 
@@ -37,7 +38,7 @@ pub trait SandboxMethods {
 pub trait ChildSandboxMethods {
     /// Activates the restrictions in this child process from here on out. Be sure to check the
     /// return value!
-    fn activate(&self) -> Result<(),()>;
+    fn activate(&self) -> Result<(),c_int>;
 }
 
 fn cstring<T>(path: T) -> CString
