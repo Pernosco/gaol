@@ -1,9 +1,6 @@
 // Any copyright is dedicated to the Public Domain.
 // http://creativecommons.org/publicdomain/zero/1.0/
 
-extern crate gaol;
-extern crate libc;
-
 use gaol::profile::{Operation, Profile};
 use gaol::sandbox::{ChildSandbox, ChildSandboxMethods, Command, Sandbox, SandboxMethods};
 use libc::{c_char, c_int, c_void, size_t};

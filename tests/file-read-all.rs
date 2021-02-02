@@ -1,10 +1,6 @@
 // Any copyright is dedicated to the Public Domain.
 // http://creativecommons.org/publicdomain/zero/1.0/
 
-extern crate gaol;
-extern crate libc;
-extern crate rand;
-
 use gaol::profile::{Operation, PathPattern, Profile};
 use gaol::sandbox::{ChildSandbox, ChildSandboxMethods, Command, Sandbox, SandboxMethods};
 use libc::{c_char, exit};
@@ -47,6 +43,8 @@ fn prohibition_test() {
 }
 
 pub fn main() {
+    env_logger::init().unwrap();
+
     match env::args().skip(1).next() {
         Some(ref arg) if arg == "allowance_test" => return allowance_test(),
         Some(ref arg) if arg == "prohibition_test" => return prohibition_test(),

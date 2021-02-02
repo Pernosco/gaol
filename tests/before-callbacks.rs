@@ -1,9 +1,6 @@
 // Any copyright is dedicated to the Public Domain.
 // http://creativecommons.org/publicdomain/zero/1.0/
 
-extern crate gaol;
-extern crate libc;
-
 use gaol::profile::{Operation, PathPattern, Profile};
 use gaol::sandbox::{ChildSandbox, ChildSandboxMethods, Command, Sandbox, SandboxMethods};
 #[cfg(any(target_os="android", target_os="linux", target_os="macos"))]
@@ -51,6 +48,8 @@ fn test_error_propagation() {
 
 #[cfg(any(target_os="android", target_os="linux", target_os="macos"))]
 pub fn main() {
+    env_logger::init().unwrap();
+
     fn profile() -> Profile {
         let exe = env::current_exe().unwrap();
         // Whitelist a bunch of directories that should let us launch this
