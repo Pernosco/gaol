@@ -85,6 +85,7 @@ const ARCH_GET_GS: u32 = 0x1004;
 const ARCH_CET_STATUS: u32 = 0x3001;
 
 const PR_SET_NAME: u32 = 15;
+const PR_CAPSET_READ: u32 = 23;
 
 const EM_386: u32 = 3;
 const EM_PPC: u32 = 20;
@@ -129,9 +130,10 @@ static FILTER_EPILOGUE: [sock_filter; 1] = [
 ];
 
 /// Syscalls that are always allowed.
-pub static ALLOWED_SYSCALLS: [c_long; 58] = [
+pub static ALLOWED_SYSCALLS: [c_long; 59] = [
     libc::SYS_alarm,
     libc::SYS_brk,
+    libc::SYS_clock_nanosleep,
     libc::SYS_clock_gettime,
     libc::SYS_clock_getres,
     libc::SYS_close,
@@ -319,6 +321,7 @@ impl Filter {
         // rust threadpools use these
         filter.if_syscall_is(libc::SYS_prctl, |filter| {
             filter.if_arg0_is(PR_SET_NAME as u32, |filter| filter.allow_this_syscall());
+            filter.if_arg0_is(PR_CAPSET_READ as u32, |filter| filter.allow_this_syscall());
         });
 
         if profile.allowed_operations().iter().any(|operation| {
