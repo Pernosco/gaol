@@ -49,6 +49,8 @@ const ARCH_NR: u32 = AUDIT_ARCH_PPC64LE;
 
 const SECCOMP_RET_KILL: u32 = 0;
 const SECCOMP_RET_ALLOW: u32 = 0x7fff_0000;
+const SECCOMP_RET_ERRNO: u32 = 0x0005_0000;
+const SECCOMP_RET_DATA: u32 = 0x0000_ffff;
 
 const LD: u16 = 0x00;
 const JMP: u16 = 0x05;
@@ -104,6 +106,7 @@ const NR_exit_group: u32 = 231;
 const NR_set_robust_list: u32 = 273;
 const NR_sendmmsg: u32 = 307;
 const NR_getrandom: u32 = 318;
+const NR_clone3: u32 = 435;
 
 const EM_386: u32 = 3;
 const EM_PPC: u32 = 20;
@@ -189,6 +192,13 @@ static ALLOWED_SYSCALLS_FOR_NETWORK_OUTBOUND: [u32; 3] = [
 const ALLOW_SYSCALL: sock_filter = sock_filter {
     code: RET + K,
     k: SECCOMP_RET_ALLOW,
+    jt: 0,
+    jf: 0,
+};
+
+const NOT_IMPLEMENTED_SYSCALL: sock_filter = sock_filter {
+    code: RET + K,
+    k: SECCOMP_RET_ERRNO | (libc::ENOSYS as u32 & SECCOMP_RET_DATA),
     jt: 0,
     jf: 0,
 };
@@ -295,6 +305,11 @@ impl Filter {
             })
         }
 
+	// Force libc to use clone rather than clone3.
+	filter.if_syscall_is(NR_clone3, |filter| {
+	    filter.not_implemented_this_syscall()
+	});
+
         // Only allow normal threads to be created.
         filter.if_syscall_is(NR_clone, |filter| {
             filter.if_arg0_is((CLONE_VM |
@@ -379,6 +394,10 @@ impl Filter {
         for &syscall in syscalls.iter() {
             self.if_syscall_is(syscall, |filter| filter.allow_this_syscall())
         }
+    }
+
+    fn not_implemented_this_syscall(&mut self) {
+        self.program.push(NOT_IMPLEMENTED_SYSCALL)
     }
 
     fn if_syscall_is<F>(&mut self, number: u32, then: F) where F: FnMut(&mut Filter) {
