@@ -27,7 +27,7 @@ use libc::{c_char, c_int, c_long, c_ulong, c_ushort, c_void};
 use libc::{O_NONBLOCK, O_DIRECTORY, O_RDONLY, O_NOCTTY, O_CLOEXEC, O_NOFOLLOW};
 use libc::{TCGETS, TIOCGWINSZ, TCSBRK, FIONREAD, FIOCLEX};
 use libc::{F_DUPFD, F_DUPFD_CLOEXEC, F_GETFD, F_SETFD, F_GETFL, F_SETFL};
-use libc::{EACCES, ENOSYS, ENOTTY};
+use libc::{EACCES, ENOSYS, ENOTTY, EPERM};
 use libc::{MADV_NORMAL, MADV_RANDOM, MADV_SEQUENTIAL, MADV_WILLNEED, MADV_DONTNEED};
 use libc::SIGCHLD;
 use std::ffi::CString;
@@ -470,6 +470,10 @@ impl Filter {
                 filter.if_arg2_is(*mode as u32, |filter| filter.allow_this_syscall())
             }
         });
+
+        // New versions of ncurses use these.
+        filter.if_syscall_is(libc::SYS_setfsuid, |filter| filter.return_errno_for_this_syscall(EPERM));
+        filter.if_syscall_is(libc::SYS_setfsgid, |filter| filter.return_errno_for_this_syscall(EPERM));
 
         filter.program.extend_from_slice(&FILTER_EPILOGUE);
         filter
