@@ -16,7 +16,7 @@ use crate::profile::Profile;
 use std::collections::HashMap;
 use std::convert::AsRef;
 use std::env;
-use std::ffi::{CString, OsStr};
+use std::ffi::{CStr, CString, OsStr};
 use std::io;
 use libc::c_int;
 
@@ -100,6 +100,11 @@ impl Command {
                        where T: AsRef<OsStr>, U: AsRef<OsStr> {
         self.env.insert(cstring(key), cstring(val));
         self
+    }
+
+    /// Returns the argument to `Command::new`.
+    pub fn get_program(&self) -> &CStr {
+        &self.module_path
     }
 
     /// Executes the command as a child process, which is returned.
