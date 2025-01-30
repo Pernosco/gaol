@@ -4,7 +4,7 @@
 use gaol::profile::{Operation, PathPattern, Profile};
 use gaol::sandbox::{ChildSandbox, ChildSandboxMethods, Command, Sandbox, SandboxMethods};
 use libc::c_char;
-use rand::{distributions::Alphanumeric, Rng};
+use rand::{distr::Alphanumeric, Rng};
 use std::env;
 use std::ffi::{CString, OsStr};
 use std::fs::File;
@@ -52,7 +52,7 @@ pub fn main() {
         temp_path = PathBuf::from(OsStr::from_bytes(&new_temp_path[..pos]));
     }
 
-    let suffix: String = rand::thread_rng().sample_iter(&Alphanumeric).take(6).collect();
+    let suffix: String = rand::rng().sample_iter(&Alphanumeric).take(6).map(|s| s as char).collect();
     temp_path.push(format!("gaoltest.{}", suffix));
     File::create(&temp_path).unwrap().write_all(b"super secret\n").unwrap();
 
