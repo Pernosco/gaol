@@ -20,7 +20,7 @@ use libc::{self, EINVAL, O_CLOEXEC, c_char, c_int, c_ulong, c_void, gid_t, pid_t
 use log::warn;
 use std::env;
 use std::ffi::{CString, OsStr, OsString};
-use std::fs::{self, File};
+use std::fs::{self, File, OpenOptions};
 use std::io::{self, Write};
 use std::iter;
 use std::mem;
@@ -215,10 +215,17 @@ fn drop_capabilities() -> Result<(),c_int> {
 /// Sets up the user and PID namespaces.
 unsafe fn prepare_user_and_pid_namespaces(parent_uid: uid_t, parent_gid: gid_t) -> io::Result<()> {
     // Enter the main user and PID namespaces.
+    let setgroups = Path::new("/proc/self/setgroups");
+    let before_meta = fs::metadata(&setgroups).unwrap();
     assert!(unshare(CLONE_NEWUSER | CLONE_NEWPID) == 0);
+    let after_meta = fs::metadata(&setgroups).unwrap();
 
     // See http://crbug.com/457362 for more information on this.
-    File::create(&Path::new("/proc/self/setgroups")).unwrap()
+    OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(setgroups)
+        .unwrap_or_else(|e| panic!("Failed to open /proc/self/setgroups {}\n{:?}\n{:?}", e, before_meta, after_meta))
         .write_all(b"deny")
         .unwrap();
 
