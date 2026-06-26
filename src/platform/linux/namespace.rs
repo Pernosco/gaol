@@ -222,12 +222,21 @@ unsafe fn prepare_user_and_pid_namespaces(parent_uid: uid_t, parent_gid: gid_t) 
     let ns = std::fs::read_link("/proc/self/ns/user").unwrap();
     let after_meta = fs::metadata(&setgroups).unwrap();
 
+    let status = std::fs::read_to_string("/proc/self/status")?;
+    let mut s = String::new();
+    for line in status.lines() {
+        if line.starts_with("CapEff") || line.starts_with("CapBnd")
+            || line.starts_with("NoNewPrivs") {
+                s.push_str(line);
+            }
+    }
+
     // See http://crbug.com/457362 for more information on this.
     OpenOptions::new()
         .write(true)
         .truncate(true)
         .open(setgroups)
-        .unwrap_or_else(|e| panic!("Failed to open /proc/self/setgroups {}\n{:?}\n{:?}\nns/user = {:?}\nsetgroups uid={} gid={} mode={:o}\nmy euid = {}", e, before_meta, after_meta, ns, after_meta.uid(), after_meta.gid(), after_meta.mode(), unsafe { libc::geteuid() }))
+        .unwrap_or_else(|e| panic!("Failed to open /proc/self/setgroups {}\n{:?}\n{:?}\nns/user = {:?}\nsetgroups uid={} gid={} mode={:o}\nmy euid = {}\n{}", e, before_meta, after_meta, ns, after_meta.uid(), after_meta.gid(), after_meta.mode(), unsafe { libc::geteuid() }, s))
         .write_all(b"deny")
         .unwrap();
 
