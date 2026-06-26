@@ -216,13 +216,13 @@ fn drop_capabilities() -> Result<(),c_int> {
 /// Sets up the user and PID namespaces.
 unsafe fn prepare_user_and_pid_namespaces(parent_uid: uid_t, parent_gid: gid_t) -> io::Result<()> {
     // Enter the main user and PID namespaces.
-    let setgroups = Path::new("/proc/self/setgroups");
+    let setgroups = PathBuf::from(format!("/proc/{}/setgroups", libc::gettid()));
     let before_meta = fs::metadata(&setgroups).unwrap();
     assert!(unshare(CLONE_NEWUSER | CLONE_NEWPID) == 0);
-    let ns = std::fs::read_link("/proc/self/ns/user").unwrap();
+    let ns = std::fs::read_link(format!("/proc/{}/ns/user", libc::gettid())).unwrap();
     let after_meta = fs::metadata(&setgroups).unwrap();
 
-    let status = std::fs::read_to_string("/proc/self/status")?;
+    let status = std::fs::read_to_string(format!("/proc/{}/status", libc::gettid()))?;
     let mut s = String::new();
     for line in status.lines() {
         if line.starts_with("CapEff") || line.starts_with("CapBnd")
