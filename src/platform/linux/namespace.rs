@@ -25,6 +25,7 @@ use std::io::{self, Write};
 use std::iter;
 use std::mem;
 use std::os::unix::io::RawFd;
+use std::os::unix::fs::MetadataExt;
 use std::os::unix::prelude::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::ptr;
@@ -218,6 +219,7 @@ unsafe fn prepare_user_and_pid_namespaces(parent_uid: uid_t, parent_gid: gid_t) 
     let setgroups = Path::new("/proc/self/setgroups");
     let before_meta = fs::metadata(&setgroups).unwrap();
     assert!(unshare(CLONE_NEWUSER | CLONE_NEWPID) == 0);
+    let ns = std::fs::read_link("/proc/self/ns/user").unwrap();
     let after_meta = fs::metadata(&setgroups).unwrap();
 
     // See http://crbug.com/457362 for more information on this.
@@ -225,7 +227,7 @@ unsafe fn prepare_user_and_pid_namespaces(parent_uid: uid_t, parent_gid: gid_t) 
         .write(true)
         .truncate(true)
         .open(setgroups)
-        .unwrap_or_else(|e| panic!("Failed to open /proc/self/setgroups {}\n{:?}\n{:?}", e, before_meta, after_meta))
+        .unwrap_or_else(|e| panic!("Failed to open /proc/self/setgroups {}\n{:?}\n{:?}\nns/user = {:?}\nsetgroups uid={} gid={} mode={:o}\nmy euid = {}", e, before_meta, after_meta, ns, after_meta.uid(), after_meta.gid(), after_meta.mode(), unsafe { libc::geteuid() }))
         .write_all(b"deny")
         .unwrap();
 
